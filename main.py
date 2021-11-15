@@ -1,19 +1,39 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy.core.fromnumeric import shape
+import os
 
+dir_figure = './figure'
+
+if not os.path.exists(dir_figure):
+    os.makedirs(dir_figure)
+
+# Lecture de l'image
 I = plt.imread('cameraman.tif')
 I_fft2 = np.fft.fft2(I)
 I_fftshift = np.fft.fftshift(I_fft2)
 
-
+# Generation du motif de tatouage
 T = np.random.randn(1024)
 alpha = 0.05
 
 def insertion_tattoo(I,T,alpha):
+    """
+    Input :
+        I : image a tatouee
+        T : motif du tatouage
+        alpha : coefficient d'application du tatouage
+    Output :
+        I_tattooed : image tatouee
+    
+    Applique le motif T sur l'image I sur les basse frequences du spectre frequenciel
+    avec le coefficient alpha pour generer l'image I_tattooed.
+
+    Rq : dans le cadre de ce TP, cette fonction n'acceptera que des motif de tatouage
+    de type vecteur de taille 1024
+    """
     I_tattooed_fft2 = np.fft.fft2(I) # FFT
 
-    # Application du tatouage sur l'image dans l'espace de Fourrier
+    # Application du motif de tatouage sur l'image dans l'espace de Fourrier
     for i in range(32):
         for j in range(32):
             I_tattooed_fft2[i+1][j+1] = I_tattooed_fft2[i+1][j+1] * (1+alpha*T[i*32+j])
@@ -40,27 +60,41 @@ def insertion_tattoo(I,T,alpha):
     return I_tattooed
 
 def PSNR(I, I_tattooed):
-    MSE = 0
+    """
+    Input :
+        I : image originale
+        I_tattooed : image tatouee
+    Output :
+        psnr : Peak Signal Noise Ratio entre l'image original et l'image tatouee
+        
+    Calcul du PSNR entre l'image originale et l'image tatouée
+    """
+
+    MSE = 0 # Mean Square Error
     for i in range(I.shape[0]):
         for j in range(I.shape[1]):
             MSE += (I[i][j]-I_tattooed.real[i][j])**2
     MSE = MSE/(I.shape[0]*I.shape[1])
 
-    return 10*np.log10((np.amax(I)**2)/MSE)
+    psnr = 10*np.log10((np.amax(I)**2)/MSE)
 
-# alphas = np.linspace(0, 1, 21)
-# psnr = []
-# for k in alphas:
-#     I_tattooed = insertion_tattoo(I,T,k)
-#     psnr.append(PSNR(I, I_tattooed))
+    return psnr
 
-# plt.figure()
-# plt.plot(alphas, psnr)
-# plt.grid()
-# plt.xlabel('alpha')
-# plt.ylabel('PSNR')
-# plt.title('Evolution du PSNR en fonction de alpha')
-# plt.show()
+alphas = np.linspace(0, 1, 21)
+alphas[0] = alphas[0]+0.01
+psnr = []
+for k in alphas:
+    I_tattooed = insertion_tattoo(I,T,k)
+    psnr.append(PSNR(I, I_tattooed))
+
+plt.figure(dpi=200)
+plt.plot(alphas, psnr)
+plt.grid()
+plt.xlabel('alpha')
+plt.ylabel('PSNR')
+plt.title('Evolution du PSNR en fonction de alpha')
+plt.savefig(os.path.join(dir_figure, 'PSNR.png'))
+plt.close()
 
 # plt.figure()
 # plt.subplot(131)
@@ -74,47 +108,68 @@ def PSNR(I, I_tattooed):
 # plt.title('FFT shift')
 # plt.show()
 
-def detection_tattoo(I, I_tattooed, alpha, T):
+def detection_tattoo(I, I_tattooed, T, alpha):
+    """
+    Input :
+        I : image originale
+        I_tattooed : image tatouee
+        T : motif du tatouage
+        alpha : coefficient d'application du tatouage
+    Output :
+        gamma : Coefficient de correlation etre le tatouage detecte et le tatouage
+        
+    Detecte la presence ou non du tatouage, et donne le coefficient de correlation.
+    """
+
+    # FFT sur l'image originale et tatouee
     I_fft2 = np.fft.fft2(I)
     I_tattooed_fft2 = np.fft.fft2(I_tattooed)
 
+    # Recuperation du tatouage sur l'image tatouee
     T_est = ((I_tattooed_fft2/I_fft2) - 1)/alpha
 
-    real_T = np.zeros(I.shape)
+    # Generation du tatouage a partir du motif
+    T_real = np.zeros(I.shape)
 
     for i in range(32):
         for j in range(32):
-            real_T[i+1][j+1] += T[i*32+j]
-            real_T[-1-i][-1-j] += T[i*32+j]
+            T_real[i+1][j+1] += T[i*32+j]
+            T_real[-1-i][-1-j] += T[i*32+j]
 
-            real_T[i+1][-1-j] += T[i*32+j]
-            real_T[-1-i][j+1] += T[i*32+j]
+            T_real[i+1][-1-j] += T[i*32+j]
+            T_real[-1-i][j+1] += T[i*32+j]
 
+    # Affichage du tatouage original et du tatouage detectee
     plt.figure()
     plt.subplot(121)
     plt.imshow(np.abs(T_est), 'gray')
+    plt.title('Tatouage estime')
     plt.subplot(122)
-    plt.imshow(np.abs(real_T), 'gray')
+    plt.imshow(np.abs(T_real), 'gray')
+    plt.title('Tatouage reel')
     plt.show()
+    plt.close()
 
+    # Vectorisation des tatouage, utile pour les calculs
     N = I.shape[0] * I.shape[0]
-
     T_est_vect = np.reshape(T_est, N)
-    real_T_vect = np.reshape(real_T, N)
+    T_real_vect = np.reshape(T_real, N)
 
+    # Calcul du coefficient de correlation
     mean_T_est = np.mean(T_est_vect)
-    mean_real_T = np.mean(real_T_vect)
+    mean_T_real = np.mean(T_real_vect)
     sum1 = 0
     sum2 = 0
     sum3 = 0
     for i in range(N):
-        sum1 += (T_est_vect[i] - mean_T_est)*(real_T_vect[i]-mean_real_T)
+        sum1 += (T_est_vect[i] - mean_T_est)*(T_real_vect[i]-mean_T_real)
         sum2 += (T_est_vect[i] - mean_T_est)**2
-        sum3 += (real_T_vect[i]-mean_real_T)**2
+        sum3 += (T_real_vect[i] - mean_T_real)**2
     
     gamma = sum1/np.sqrt(sum2*sum3)
-    print(gamma)
+    return gamma
 
 
 alpha = 0.1
-detection_tattoo(I, insertion_tattoo(I, T, alpha), alpha, T)
+I_tattooed = insertion_tattoo(I, T, alpha)
+print(detection_tattoo(I, I_tattooed, T, alpha))
