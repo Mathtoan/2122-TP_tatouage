@@ -122,6 +122,9 @@ def detection_tattoo(I, I_tattooed, T, alpha):
     Detecte la presence ou non du tatouage, et donne le coefficient de correlation.
     """
 
+    detected_tattoo = False
+    match_tattoo = False
+
     # FFT sur l'image originale et tatouee
     I_fft2 = np.fft.fft2(I)
     I_tattooed_fft2 = np.fft.fft2(I_tattooed)
@@ -157,19 +160,37 @@ def detection_tattoo(I, I_tattooed, T, alpha):
     T_est_vect = np.reshape(T_est, N)
     T_real_vect = np.reshape(T_real, N)
 
-    # Calcul du coefficient de correlation
-    mean_T_est = np.mean(T_est_vect)
-    mean_T_real = np.mean(T_real_vect)
-    sum1 = 0
-    sum2 = 0
-    sum3 = 0
-    for i in range(N):
-        sum1 += (T_est_vect[i] - mean_T_est)*(T_real_vect[i]-mean_T_real)
-        sum2 += (T_est_vect[i] - mean_T_est)**2
-        sum3 += (T_real_vect[i] - mean_T_real)**2
-    
-    gamma = sum1/np.sqrt(sum2*sum3)
-    return gamma
+    # Detection du tatouage
+    T_est_norm = np.linalg.norm(T_est_vect)
+    if T_est_norm < 1 :
+        print('Aucun tatouage non dectecté')
+        return detected_tattoo, match_tattoo
+    else:
+        detected_tattoo = True
+        print('Tatouage detecté')
+
+        # Calcul du coefficient de correlation
+        mean_T_est = np.mean(T_est_vect)
+        mean_T_real = np.mean(T_real_vect)
+        threshold = .5
+        sum1 = 0
+        sum2 = 0
+        sum3 = 0
+        for i in range(N):
+            sum1 += (T_est_vect[i] - mean_T_est)*(T_real_vect[i]-mean_T_real)
+            sum2 += (T_est_vect[i] - mean_T_est)**2
+            sum3 += (T_real_vect[i] - mean_T_real)**2
+        
+        gamma = sum1/np.sqrt(sum2*sum3)
+        print('Coefficient de correlation :', gamma.real)
+
+        if gamma<threshold :
+            print('Le tatouage detecte ne correspond pas au tatouage de base')
+            return detected_tattoo, match_tattoo
+        else:
+            match_tattoo = True
+            print('Le tatouage detecte correspond au tatouage de base')
+            return detected_tattoo, match_tattoo
 
 
 alpha = 0.1
