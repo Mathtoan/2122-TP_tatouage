@@ -19,28 +19,29 @@ alpha = 0.05
 def insertion_tattoo(I,T,alpha):
     """
     Input :
-        I : image a tatouee
+        I : image a tatouer
         T : motif du tatouage
         alpha : coefficient d'application du tatouage
     Output :
         I_tattooed : image tatouee
     
-    Applique le motif T sur l'image I sur les basse frequences du spectre frequenciel
+    Applique le motif T sur l'image I sur les basses frequences du spectre frequenciel
     avec le coefficient alpha pour generer l'image I_tattooed.
 
-    Rq : dans le cadre de ce TP, cette fonction n'acceptera que des motif de tatouage
-    de type vecteur de taille 1024
+    Rq : dans le cadre de ce TP, cette fonction n'acceptera que des motifs de tatouage
+    de type vecteur dont la longueur est un carré d'un entier
     """
+    n = int(T.shape[0]**0.5)
     I_tattooed_fft2 = np.fft.fft2(I) # FFT
 
     # Application du motif de tatouage sur l'image dans l'espace de Fourrier
-    for i in range(32):
-        for j in range(32):
-            I_tattooed_fft2[i+1][j+1] = I_tattooed_fft2[i+1][j+1] * (1+alpha*T[i*32+j])
-            I_tattooed_fft2[-1-i][-1-j] = I_tattooed_fft2[-1-i][-1-j] * (1+alpha*T[i*32+j])
+    for i in range(n):
+        for j in range(n):
+            I_tattooed_fft2[i+1][j+1] = I_tattooed_fft2[i+1][j+1] * (1+alpha*T[i*n+j])
+            I_tattooed_fft2[-1-i][-1-j] = I_tattooed_fft2[-1-i][-1-j] * (1+alpha*T[i*n+j])
 
-            I_tattooed_fft2[i+1][-1-j] = I_tattooed_fft2[i+1][-1-j] * (1+alpha*T[i*32+j])
-            I_tattooed_fft2[-1-i][j+1] = I_tattooed_fft2[-1-i][j+1] * (1+alpha*T[i*32+j])
+            I_tattooed_fft2[i+1][-1-j] = I_tattooed_fft2[i+1][-1-j] * (1+alpha*T[i*n+j])
+            I_tattooed_fft2[-1-i][j+1] = I_tattooed_fft2[-1-i][j+1] * (1+alpha*T[i*n+j])
     
     # # Verification symetrie hermitienne (on verifie ligne par ligne)
     # for i in range(1, int(256/2)):
@@ -129,15 +130,16 @@ def detection_tattoo(I, I_tattooed, T, alpha):
     T_est = ((I_tattooed_fft2/I_fft2) - 1)/alpha
 
     # Generation du tatouage a partir du motif
+    n = int(T.shape[0]**0.5)
     T_real = np.zeros(I.shape)
 
-    for i in range(32):
-        for j in range(32):
-            T_real[i+1][j+1] += T[i*32+j]
-            T_real[-1-i][-1-j] += T[i*32+j]
+    for i in range(n):
+        for j in range(n):
+            T_real[i+1][j+1] += T[i*n+j]
+            T_real[-1-i][-1-j] += T[i*n+j]
 
-            T_real[i+1][-1-j] += T[i*32+j]
-            T_real[-1-i][j+1] += T[i*32+j]
+            T_real[i+1][-1-j] += T[i*n+j]
+            T_real[-1-i][j+1] += T[i*n+j]
 
     # Affichage du tatouage original et du tatouage detectee
     plt.figure()
