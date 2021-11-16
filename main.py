@@ -117,9 +117,11 @@ def detection_tattoo(I, I_tattooed, T, alpha):
         T : motif du tatouage
         alpha : coefficient d'application du tatouage
     Output :
-        gamma : Coefficient de correlation etre le tatouage detecte et le tatouage
+        detected_tattoo : Indique si le tatouage est detecte
+        match_tattoo : Indique si le tatoauge correspond au tatouage original
         
-    Detecte la presence ou non du tatouage, et donne le coefficient de correlation.
+    Detecte la presence ou non du tatouage, et si oui, calcul coefficient de correlation
+    pour determiner si le tatouage correspond au tatouage original.
     """
 
     detected_tattoo = False
