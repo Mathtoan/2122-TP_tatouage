@@ -34,6 +34,7 @@ def insertion_tattoo(I,T,alpha):
     """
     n = int(T.shape[0]**0.5)
     I_tattooed_fft2 = np.fft.fft2(I) # FFT
+    I_tattooed_fft2_shift = np.fft.fftshift(I_tattooed_fft2) # FFT shift
 
     # Application du motif de tatouage sur l'image dans l'espace de Fourrier
     for i in range(n):
@@ -59,6 +60,34 @@ def insertion_tattoo(I,T,alpha):
 
     # Passage dans l'espace direct
     I_tattooed = np.fft.ifft2(I_tattooed_fft2)
+
+    # Affichage
+
+    plt.figure()
+    plt.subplot(131)
+    plt.imshow(I, 'gray')
+    plt.title('Image originale')
+    plt.subplot(132)
+    plt.imshow(np.abs(np.log(I_tattooed_fft2)), 'gray')
+    plt.title('TF de l image')
+    plt.subplot(133)
+    plt.imshow(np.abs(np.log(I_tattooed_fft2_shift)), 'gray')
+    plt.title('TF shift de l image')
+    plt.savefig(os.path.join(dir_figure, 'image avec fft.png'))
+    # plt.show()
+    plt.close()
+
+    plt.figure()
+    plt.subplot(121)
+    plt.imshow(I, 'gray')
+    plt.title('Image originale')
+    plt.subplot(122)
+    plt.imshow(np.abs(I_tattooed), 'gray')
+    plt.title('Image tatouee')
+    plt.savefig(os.path.join(dir_figure, 'image vs tatoue.png'))
+    # plt.show()
+    plt.close()
+
     return I_tattooed
 
 def PSNR(I, I_tattooed):
@@ -157,7 +186,8 @@ def detection_tattoo(I, I_tattooed, T, alpha, display=True):
         plt.subplot(122)
         plt.imshow(np.abs(T_real), 'gray')
         plt.title('Tatouage reel')
-        plt.show()
+        plt.savefig(os.path.join(dir_figure, 'tatouage estime vs reel.png'))
+        # plt.show()
         plt.close()
 
     # Vectorisation des tatouage, utile pour les calculs
@@ -169,7 +199,7 @@ def detection_tattoo(I, I_tattooed, T, alpha, display=True):
     T_est_norm = np.linalg.norm(T_est_vect)
     print(T_est_norm)
     if T_est_norm < 1 :
-        print('Aucun tatouage non dectecte')
+        print('Aucun tatouage dectecte')
         return detected_tattoo, match_tattoo
     else:
         detected_tattoo = True
