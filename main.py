@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2
 import os
 
 dir_figure = './figure'
@@ -81,21 +82,21 @@ def PSNR(I, I_tattooed):
 
     return psnr
 
-alphas = np.linspace(0, 1, 21)
-alphas[0] = alphas[0]+0.01
-psnr = []
-for k in alphas:
-    I_tattooed = insertion_tattoo(I,T,k)
-    psnr.append(PSNR(I, I_tattooed))
+# alphas = np.linspace(0, 1, 21)
+# alphas[0] = alphas[0]+0.01
+# psnr = []
+# for k in alphas:
+#     I_tattooed = insertion_tattoo(I,T,k)
+#     psnr.append(PSNR(I, I_tattooed))
 
-plt.figure(dpi=200)
-plt.plot(alphas, psnr)
-plt.grid()
-plt.xlabel('alpha')
-plt.ylabel('PSNR')
-plt.title('Evolution du PSNR en fonction de alpha')
-plt.savefig(os.path.join(dir_figure, 'PSNR.png'))
-plt.close()
+# plt.figure(dpi=200)
+# plt.plot(alphas, psnr)
+# plt.grid()
+# plt.xlabel('alpha')
+# plt.ylabel('PSNR')
+# plt.title('Evolution du PSNR en fonction de alpha')
+# plt.savefig(os.path.join(dir_figure, 'PSNR.png'))
+# plt.close()
 
 # plt.figure()
 # plt.subplot(131)
@@ -109,13 +110,14 @@ plt.close()
 # plt.title('FFT shift')
 # plt.show()
 
-def detection_tattoo(I, I_tattooed, T, alpha):
+def detection_tattoo(I, I_tattooed, T, alpha, display=True):
     """
     Input :
         I : image originale
         I_tattooed : image tatouee
         T : motif du tatouage
         alpha : coefficient d'application du tatouage
+        display : affichage des tatouages (True par defaut)
     Output :
         detected_tattoo : Indique si le tatouage est detecte
         match_tattoo : Indique si le tatoauge correspond au tatouage original
@@ -147,15 +149,16 @@ def detection_tattoo(I, I_tattooed, T, alpha):
             T_real[-1-i][j+1] += T[i*n+j]
 
     # Affichage du tatouage original et du tatouage detectee
-    plt.figure()
-    plt.subplot(121)
-    plt.imshow(np.abs(T_est), 'gray')
-    plt.title('Tatouage estime')
-    plt.subplot(122)
-    plt.imshow(np.abs(T_real), 'gray')
-    plt.title('Tatouage reel')
-    plt.show()
-    plt.close()
+    if display:
+        plt.figure()
+        plt.subplot(121)
+        plt.imshow(np.abs(T_est), 'gray')
+        plt.title('Tatouage estime')
+        plt.subplot(122)
+        plt.imshow(np.abs(T_real), 'gray')
+        plt.title('Tatouage reel')
+        plt.show()
+        plt.close()
 
     # Vectorisation des tatouage, utile pour les calculs
     N = I.shape[0] * I.shape[0]
@@ -164,12 +167,13 @@ def detection_tattoo(I, I_tattooed, T, alpha):
 
     # Detection du tatouage
     T_est_norm = np.linalg.norm(T_est_vect)
+    print(T_est_norm)
     if T_est_norm < 1 :
-        print('Aucun tatouage non dectecté')
+        print('Aucun tatouage non dectecte')
         return detected_tattoo, match_tattoo
     else:
         detected_tattoo = True
-        print('Tatouage detecté')
+        print('Tatouage detecte')
 
         # Calcul du coefficient de correlation
         mean_T_est = np.mean(T_est_vect)
@@ -194,7 +198,28 @@ def detection_tattoo(I, I_tattooed, T, alpha):
             print('Le tatouage detecte correspond au tatouage de base')
             return detected_tattoo, match_tattoo
 
-
+# Detection de tatouage
 alpha = 0.1
 I_tattooed = insertion_tattoo(I, T, alpha)
-print(detection_tattoo(I, I_tattooed, T, alpha))
+print(detection_tattoo(I, I_tattooed, T, alpha, display=False))
+
+# Degradation du tatouage
+
+gaussian_noise = np.random.normal(0, 0.001 ** 0.5, I_tattooed.shape)*255
+
+
+I_tattooed_gauss = I_tattooed.real+gaussian_noise
+
+print(np.amax(I_tattooed.real), np.amin(I_tattooed.real))
+
+plt.figure()
+plt.subplot(121)
+plt.imshow(I_tattooed.real, 'gray')
+plt.title('Image tatouee')
+plt.subplot(122)
+plt.imshow(I_tattooed_gauss.real, 'gray')
+plt.title('Image degradee')
+plt.show()
+plt.close()
+
+print(detection_tattoo(I, I_tattooed_gauss, T, alpha))
